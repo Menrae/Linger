@@ -14,10 +14,8 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 export function MapView() {
   const mapRef = useRef<MapRef>(null);
   const { lat, lng, zoom, loading } = useUserLocation();
-  const { viewport, setViewport } = useMapStore((s) => ({
-    viewport: s.viewport,
-    setViewport: s.setViewport,
-  }));
+  const viewport = useMapStore((s) => s.viewport);
+  const setViewport = useMapStore((s) => s.setViewport);
 
   const { bounds, onMoveEnd: boundsOnMoveEnd } = useMapBounds(mapRef);
   const { events } = useEvents(bounds);
@@ -31,6 +29,10 @@ export function MapView() {
     setViewport({ lat: center.lat, lng: center.lng, zoom: map.getZoom() });
   }, [boundsOnMoveEnd, setViewport]);
 
+  const onLoad = useCallback(() => {
+    boundsOnMoveEnd();
+  }, [boundsOnMoveEnd]);
+
   if (loading) return null;
 
   return (
@@ -40,6 +42,7 @@ export function MapView() {
       style={{ width: '100%', height: '100vh' }}
       mapStyle="mapbox://styles/mapbox/dark-v11"
       mapboxAccessToken={MAPBOX_TOKEN}
+      onLoad={onLoad}
       onMoveEnd={onMoveEnd}
     >
       <NavigationControl position="top-right" />

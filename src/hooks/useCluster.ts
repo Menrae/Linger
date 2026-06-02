@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { clusterIndex } from '../lib/supercluster';
 import type { Event, MapBounds } from '../types';
 import type { ClusterFeature, PointFeature } from 'supercluster';
@@ -25,11 +25,8 @@ export function useCluster(
     [events],
   );
 
-  useEffect(() => {
-    clusterIndex.load(features);
-  }, [features]);
-
   const clusters = useMemo((): ClusterOrPoint[] => {
+    clusterIndex.load(features);
     if (!bounds) return [];
     const bbox: [number, number, number, number] = [
       bounds.minLng,
@@ -38,7 +35,7 @@ export function useCluster(
       bounds.maxLat,
     ];
     return clusterIndex.getClusters(bbox, Math.round(zoom)) as ClusterOrPoint[];
-  }, [bounds, zoom]);
+  }, [features, bounds, zoom]);
 
   return { clusters };
 }

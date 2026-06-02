@@ -3,11 +3,16 @@ import { supabase } from '../lib/supabase';
 import type { Event, MapBounds } from '../types';
 
 function extractLatLng(raw: unknown): { lat: number; lng: number } | null {
-  if (!raw || typeof raw !== 'object') return null;
-  const r = raw as Record<string, unknown>;
-  // PostGIS geography comes back as GeoJSON from Supabase
-  if (r.coordinates && Array.isArray(r.coordinates)) {
-    return { lat: r.coordinates[1] as number, lng: r.coordinates[0] as number };
+  // PostgREST may return geography as a parsed GeoJSON object or as a JSON string
+  let obj: unknown = raw;
+  if (typeof raw === 'string') {
+    try { obj = JSON.parse(raw); } catch { return null; }
+  }
+  if (!obj || typeof obj !== 'object') return null;
+  const r = obj as Record<string, unknown>;
+  if (r.coordinates && Array.isArray(r.coordinates) && r.coordinates.length >= 2) {
+    // GeoJSON Point coordinates are [longitude, latitude]
+    return { lng: r.coordinates[0] as number, lat: r.coordinates[1] as number };
   }
   return null;
 }
@@ -30,10 +35,11 @@ export function useEvents(bounds: MapBounds | null) {
 
   const mergeAndCommit = useCallback((incoming: Event[]) => {
     const prevCache = cache.current;
+    const currentBounds = boundsRef.current;
 
-    if (bounds && prevCache.size > 0) {
+    if (currentBounds && prevCache.size > 0) {
       const prevInNew = [...prevCache.values()].filter((e) =>
-        isInBounds(e.location.lat, e.location.lng, bounds),
+        isInBounds(e.location.lat, e.location.lng, currentBounds),
       );
       const overlapRatio = prevInNew.length / prevCache.size;
       if (overlapRatio < 0.2) {
@@ -45,7 +51,7 @@ export function useEvents(bounds: MapBounds | null) {
       prevCache.set(e.id, e);
     }
     setEvents([...prevCache.values()]);
-  }, [bounds]);
+  }, []);
 
   useEffect(() => {
     boundsRef.current = bounds;
@@ -87,7 +93,7 @@ export function useEvents(bounds: MapBounds | null) {
     return () => {
       cancelled = true;
     };
-  }, [bounds, mergeAndCommit]);
+  }, [bounds]); // mergeAndCommit is stable (empty deps, reads boundsRef)
 
   useEffect(() => {
     const channel = supabase

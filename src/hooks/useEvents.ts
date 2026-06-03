@@ -2,17 +2,37 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Event, MapBounds } from '../types';
 
+function parseWKBHex(hex: string): { lat: number; lng: number } | null {
+  if (hex.length < 50) return null;
+  const bytes = new Uint8Array(hex.match(/.{2}/g)!.map((b) => parseInt(b, 16)));
+  const view = new DataView(bytes.buffer);
+  const lng = view.getFloat64(9, true); // little-endian
+  const lat = view.getFloat64(17, true);
+  return { lat, lng };
+}
+
 function extractLatLng(raw: unknown): { lat: number; lng: number } | null {
-  // PostgREST may return geography as a parsed GeoJSON object or as a JSON string
-  let obj: unknown = raw;
-  if (typeof raw === 'string') {
-    try { obj = JSON.parse(raw); } catch { return null; }
+  // Case 1: WKB hex string — PostgREST's actual wire format for GEOGRAPHY columns
+  if (typeof raw === 'string' && (raw.startsWith('0101000020') || raw.startsWith('0101000000'))) {
+    return parseWKBHex(raw);
   }
-  if (!obj || typeof obj !== 'object') return null;
-  const r = obj as Record<string, unknown>;
-  if (r.coordinates && Array.isArray(r.coordinates) && r.coordinates.length >= 2) {
-    // GeoJSON Point coordinates are [longitude, latitude]
-    return { lng: r.coordinates[0] as number, lat: r.coordinates[1] as number };
+  // Case 2: already a parsed GeoJSON object
+  if (raw && typeof raw === 'object') {
+    const r = raw as Record<string, unknown>;
+    if (Array.isArray(r.coordinates) && r.coordinates.length >= 2) {
+      return { lng: r.coordinates[0] as number, lat: r.coordinates[1] as number };
+    }
+  }
+  // Case 3: JSON string of a GeoJSON object
+  if (typeof raw === 'string') {
+    try {
+      const obj = JSON.parse(raw) as Record<string, unknown>;
+      if (Array.isArray(obj.coordinates) && obj.coordinates.length >= 2) {
+        return { lng: obj.coordinates[0] as number, lat: obj.coordinates[1] as number };
+      }
+    } catch {
+      return null;
+    }
   }
   return null;
 }

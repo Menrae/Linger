@@ -26,9 +26,10 @@ function tagColor(tags: string[]): string {
 
 interface EventPinProps {
   event: Event;
+  isNew?: boolean;
 }
 
-export function EventPin({ event }: EventPinProps) {
+export function EventPin({ event, isNew }: EventPinProps) {
   const [hovered, setHovered] = useState(false);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
   const color = tagColor(event.tags);
@@ -50,7 +51,7 @@ export function EventPin({ event }: EventPinProps) {
       >
         <div
           style={{ backgroundColor: color }}
-          className="w-4 h-4 rounded-full border-2 border-white shadow-md"
+          className={`w-4 h-4 rounded-full border-2 border-white shadow-md${isNew ? ' animate-pin-enter' : ''}`}
         />
         {hovered && (
           <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg pointer-events-none">

@@ -52,6 +52,7 @@ export function useEvents(bounds: MapBounds | null) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const boundsRef = useRef<MapBounds | null>(null);
+  const [recentEventIds, setRecentEventIds] = useState<Set<string>>(new Set());
 
   const mergeAndCommit = useCallback((incoming: Event[]) => {
     const prevCache = cache.current;
@@ -133,6 +134,14 @@ export function useEvents(bounds: MapBounds | null) {
           };
           cache.current.set(event.id, event);
           setEvents([...cache.current.values()]);
+          setRecentEventIds((prev) => new Set(prev).add(event.id));
+          setTimeout(() => {
+            setRecentEventIds((prev) => {
+              const next = new Set(prev);
+              next.delete(event.id);
+              return next;
+            });
+          }, 500);
         },
       )
       .subscribe();
@@ -142,5 +151,5 @@ export function useEvents(bounds: MapBounds | null) {
     };
   }, []);
 
-  return { events, loading, error };
+  return { events, loading, error, recentEventIds };
 }

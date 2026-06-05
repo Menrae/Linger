@@ -3,3 +3,12 @@
 body {
   margin: 0;
 }
+
+@keyframes pin-enter {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+@theme {
+  --animate-pin-enter: pin-enter 200ms ease-out forwards;
+}

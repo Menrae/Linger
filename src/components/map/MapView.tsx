@@ -18,7 +18,7 @@ export function MapView() {
   const setViewport = useMapStore((s) => s.setViewport);
 
   const { bounds, onMoveEnd: boundsOnMoveEnd } = useMapBounds(mapRef);
-  const { events } = useEvents(bounds);
+  const { events, recentEventIds } = useEvents(bounds);
   const { clusters } = useCluster(events, bounds, viewport.zoom);
 
   const onMoveEnd = useCallback(() => {
@@ -66,6 +66,7 @@ export function MapView() {
           <EventPin
             key={`pin-${item.properties.id}`}
             event={item.properties}
+            isNew={recentEventIds.has(item.properties.id)}
           />
         );
       })}

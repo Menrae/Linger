@@ -1,3 +1,5 @@
+export type AuthUser = import('@supabase/supabase-js').User;
+
 export interface Event {
   id: string;
   created_at: string;

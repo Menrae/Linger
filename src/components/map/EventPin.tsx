@@ -1,24 +1,14 @@
 import { useState } from 'react';
 import { Marker } from 'react-map-gl/mapbox';
 import { useMapStore } from '../../store/mapStore';
-import type { Event } from '../../types';
-
-const TAG_COLORS: Record<string, string> = {
-  sports: '#3B82F6',
-  music: '#A855F7',
-  food: '#F97316',
-  arts: '#EC4899',
-  tech: '#06B6D4',
-  outdoors: '#22C55E',
-  social: '#EAB308',
-  education: '#8B5CF6',
-};
+import { TAG_COLORS } from '../../types';
+import type { Event, EventTag } from '../../types';
 
 const DEFAULT_COLOR = '#6B7280';
 
 function tagColor(tags: string[]): string {
   for (const tag of tags) {
-    const color = TAG_COLORS[tag.toLowerCase()];
+    const color = TAG_COLORS[tag as EventTag];
     if (color) return color;
   }
   return DEFAULT_COLOR;

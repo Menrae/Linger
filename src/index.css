@@ -12,3 +12,32 @@ body {
 @theme {
   --animate-pin-enter: pin-enter 200ms ease-out forwards;
 }
+
+@keyframes location-pulse {
+  0%   { transform: scale(1); opacity: 0.75; }
+  70%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+.pending-marker {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.pending-marker-core {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: #6366f1;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.pending-marker-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid #6366f1;
+  animation: location-pulse 1.6s ease-out infinite;
+}

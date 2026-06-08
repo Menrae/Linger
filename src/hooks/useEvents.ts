@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { supabase } from '../lib/supabase';
 import type { Event, MapBounds } from '../types';
+import { supabase } from '../lib/supabase';
 
 function parseWKBHex(hex: string): { lat: number; lng: number } | null {
   if (hex.length < 50) return null;
@@ -114,7 +114,8 @@ export function useEvents(bounds: MapBounds | null) {
     return () => {
       cancelled = true;
     };
-  }, [bounds]); // mergeAndCommit is stable (empty deps, reads boundsRef)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bounds]); // mergeAndCommit is stable (useCallback with [], reads boundsRef)
 
   useEffect(() => {
     const channel = supabase
@@ -151,5 +152,21 @@ export function useEvents(bounds: MapBounds | null) {
     };
   }, []);
 
-  return { events, loading, error, recentEventIds };
+  const addOptimisticEvent = useCallback((event: Event) => {
+    cache.current.set(event.id, event);
+    setEvents([...cache.current.values()]);
+  }, []);
+
+  const replaceOptimisticEvent = useCallback((tempId: string, event: Event) => {
+    cache.current.delete(tempId);
+    cache.current.set(event.id, event);
+    setEvents([...cache.current.values()]);
+  }, []);
+
+  const removeOptimisticEvent = useCallback((id: string) => {
+    cache.current.delete(id);
+    setEvents([...cache.current.values()]);
+  }, []);
+
+  return { events, loading, error, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent };
 }

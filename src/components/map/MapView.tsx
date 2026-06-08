@@ -15,6 +15,7 @@ import { AuthModal } from '../ui/AuthModal';
 import { FilterPill } from '../ui/FilterPill';
 import { FilterTray } from '../ui/FilterTray';
 import { CreateEventModal } from '../events/CreateEventModal';
+import { EventDrawer } from '../events/EventDrawer';
 import type { EventFormData } from '../../types';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
@@ -29,7 +30,9 @@ export function MapView() {
   const enterPlacementMode = useMapStore((s) => s.enterPlacementMode);
   const exitPlacementMode = useMapStore((s) => s.exitPlacementMode);
   const setPendingLocation = useMapStore((s) => s.setPendingLocation);
+  const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
   const user = useAuthStore((s) => s.user);
+  const displayName = useAuthStore((s) => s.displayName);
   const signOut = useAuthStore((s) => s.signOut);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -81,10 +84,13 @@ export function MapView() {
 
   const onMapClick = useCallback(
     (e: MapLayerMouseEvent) => {
-      if (!placementMode) return;
-      setPendingLocation([e.lngLat.lng, e.lngLat.lat]);
+      if (placementMode) {
+        setPendingLocation([e.lngLat.lng, e.lngLat.lat]);
+      } else {
+        setSelectedEvent(null);
+      }
     },
-    [placementMode, setPendingLocation],
+    [placementMode, setPendingLocation, setSelectedEvent],
   );
 
   const flyTo = useCallback((lngVal: number, latVal: number) => {
@@ -143,7 +149,10 @@ export function MapView() {
           {user ? (
             <>
               <span className="text-white text-xs bg-black/50 rounded px-2 py-1 max-w-[160px] truncate">
-                {user.email && user.email.length > 20 ? `${user.email.slice(0, 20)}…` : user.email}
+                {(() => {
+                  const label = displayName ?? user.email ?? '';
+                  return label.length > 20 ? `${label.slice(0, 20)}…` : label;
+                })()}
               </span>
               <button
                 onClick={handleHostButton}
@@ -216,6 +225,9 @@ export function MapView() {
       {/* Filter pill — sits above map, below modals (z-40) */}
       <FilterPill onClick={() => setTrayOpen(true)} />
       <FilterTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} />
+
+      {/* Event detail drawer — always in DOM, slides up when selectedEventId is set */}
+      <EventDrawer />
 
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
 

@@ -68,3 +68,20 @@ export interface MapBounds {
   maxLat: number;
   maxLng: number;
 }
+
+export interface Profile {
+  id: string;
+  display_name: string | null;
+  created_at: string;
+}
+
+export interface EventAttendee {
+  event_id: string;
+  user_id: string;
+  rsvp_at: string;
+}
+
+export interface EventDetail extends Event {
+  host: Profile | null;
+  is_attending: boolean;
+}

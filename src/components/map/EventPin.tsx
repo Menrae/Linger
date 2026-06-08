@@ -23,6 +23,8 @@ interface EventPinProps {
 export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
   const [hovered, setHovered] = useState(false);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
+  const selectedEventId = useMapStore((s) => s.selectedEventId);
+  const isSelected = selectedEventId === event.id;
   const color = tagColor(event.tags);
 
   if (isDimmed) {
@@ -49,7 +51,7 @@ export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
       }}
     >
       <div
-        className="relative cursor-pointer"
+        className={`relative cursor-pointer transition-transform duration-150 ${isSelected ? 'scale-[1.2]' : ''}`}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >

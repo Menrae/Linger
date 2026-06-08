@@ -4,15 +4,28 @@ import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 import { useFilterSync } from './hooks/useFilterSync';
 
+async function fetchDisplayName(userId: string): Promise<string | null> {
+  const { data } = await supabase
+    .from('profiles')
+    .select('display_name')
+    .eq('id', userId)
+    .maybeSingle();
+  return (data as { display_name: string | null } | null)?.display_name ?? null;
+}
+
 function App() {
   useFilterSync(); // keeps URL query params in sync with filterStore for the app lifetime
   const setUser = useAuthStore((s) => s.setUser);
+  const setDisplayName = useAuthStore((s) => s.setDisplayName);
   const setLoading = useAuthStore((s) => s.setLoading);
   const loading = useAuthStore((s) => s.loading);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        setDisplayName(await fetchDisplayName(session.user.id));
+      }
       setLoading(false);
     });
 
@@ -20,10 +33,15 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        void fetchDisplayName(session.user.id).then(setDisplayName);
+      } else {
+        setDisplayName(null);
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, setLoading]);
+  }, [setUser, setDisplayName, setLoading]);
 
   if (loading) {
     return (

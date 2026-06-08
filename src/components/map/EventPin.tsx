@@ -17,12 +17,26 @@ function tagColor(tags: string[]): string {
 interface EventPinProps {
   event: Event;
   isNew?: boolean;
+  isDimmed?: boolean;
 }
 
-export function EventPin({ event, isNew }: EventPinProps) {
+export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
   const [hovered, setHovered] = useState(false);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
   const color = tagColor(event.tags);
+
+  if (isDimmed) {
+    return (
+      <Marker longitude={event.location.lng} latitude={event.location.lat} anchor="center">
+        <div className="opacity-25">
+          <div
+            style={{ backgroundColor: color }}
+            className="w-4 h-4 rounded-full border-2 border-white shadow-md"
+          />
+        </div>
+      </Marker>
+    );
+  }
 
   return (
     <Marker

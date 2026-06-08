@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { MapView } from './components/map/MapView';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
+import { useFilterSync } from './hooks/useFilterSync';
 
 function App() {
+  useFilterSync(); // keeps URL query params in sync with filterStore for the app lifetime
   const setUser = useAuthStore((s) => s.setUser);
   const setLoading = useAuthStore((s) => s.setLoading);
   const loading = useAuthStore((s) => s.loading);

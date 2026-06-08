@@ -6,11 +6,14 @@ import { useUserLocation } from '../../hooks/useUserLocation';
 import { useMapBounds } from '../../hooks/useMapBounds';
 import { useEvents } from '../../hooks/useEvents';
 import { useCluster } from '../../hooks/useCluster';
+import { useFilteredEvents } from '../../hooks/useFilteredEvents';
 import { useMapStore } from '../../store/mapStore';
 import { useAuthStore } from '../../store/authStore';
 import { EventPin } from './EventPin';
 import { EventCluster } from './EventCluster';
 import { AuthModal } from '../ui/AuthModal';
+import { FilterPill } from '../ui/FilterPill';
+import { FilterTray } from '../ui/FilterTray';
 import { CreateEventModal } from '../events/CreateEventModal';
 import type { EventFormData } from '../../types';
 
@@ -30,6 +33,8 @@ export function MapView() {
   const signOut = useAuthStore((s) => s.signOut);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [trayOpen, setTrayOpen] = useState(false);
+
   // useRef instead of useState: Zustand's useSyncExternalStore flushes a
   // re-render synchronously when setPendingLocation fires, before React can
   // commit a pending setRestoredSubmission call. The ref is written first,
@@ -43,7 +48,12 @@ export function MapView() {
   const { bounds, onMoveEnd: boundsOnMoveEnd } = useMapBounds(mapRef);
   const { events, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent } =
     useEvents(bounds);
-  const { clusters } = useCluster(events, bounds, viewport.zoom);
+
+  // Client-side filtering — no extra network calls on filter change.
+  // filteredEvents → clustered normally (full opacity).
+  // dimmedEvents → rendered as individual pins at 25% opacity, never clustered.
+  const { filteredEvents, dimmedEvents } = useFilteredEvents(events);
+  const { clusters } = useCluster(filteredEvents, bounds, viewport.zoom);
 
   // Sync crosshair cursor with placement mode
   useEffect(() => {
@@ -77,8 +87,8 @@ export function MapView() {
     [placementMode, setPendingLocation],
   );
 
-  const flyTo = useCallback((lng: number, lat: number) => {
-    mapRef.current?.flyTo({ center: [lng, lat], zoom: 14, duration: 1000 });
+  const flyTo = useCallback((lngVal: number, latVal: number) => {
+    mapRef.current?.flyTo({ center: [lngVal, latVal], zoom: 14, duration: 1000 });
   }, []);
 
   const handleHostButton = useCallback(() => {
@@ -172,6 +182,13 @@ export function MapView() {
           </Marker>
         )}
 
+        {/* Dimmed pins — rendered first (underneath) so active pins sit on top.
+            They never cluster: only filteredEvents go through useCluster. */}
+        {dimmedEvents.map((event) => (
+          <EventPin key={`dim-${event.id}`} event={event} isDimmed />
+        ))}
+
+        {/* Active clusters and individual pins */}
         {clusters.map((item) => {
           const [longitude, latitude] = item.geometry.coordinates;
           if (item.properties.cluster) {
@@ -195,6 +212,10 @@ export function MapView() {
           );
         })}
       </Map>
+
+      {/* Filter pill — sits above map, below modals (z-40) */}
+      <FilterPill onClick={() => setTrayOpen(true)} />
+      <FilterTray isOpen={trayOpen} onClose={() => setTrayOpen(false)} />
 
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
 

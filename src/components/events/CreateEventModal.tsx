@@ -12,17 +12,27 @@ import type { Event, EventFormData, GeocodeSuggestion } from '../../types';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
-const eventSchema = z.object({
+type CrossFieldData = { ends_at: string; starts_at: string; capacity: string };
+
+function applyCrossFieldValidation(data: CrossFieldData, ctx: z.RefinementCtx): void {
+  if (data.ends_at && data.starts_at && new Date(data.ends_at) <= new Date(data.starts_at)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'End time must be after start time', path: ['ends_at'] });
+  }
+  if (data.capacity && isNaN(parseInt(data.capacity, 10))) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Capacity must be a whole number', path: ['capacity'] });
+  }
+  if (data.capacity && parseInt(data.capacity, 10) < 1) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Capacity must be at least 1', path: ['capacity'] });
+  }
+}
+
+const sharedFields = {
   address: z.string().min(1, { message: 'Address is required' }),
   title: z
     .string()
     .min(3, { message: 'Title must be at least 3 characters' })
     .max(120, { message: 'Title must be at most 120 characters' }),
   description: z.string().max(2000, { message: 'Description must be at most 2000 characters' }),
-  starts_at: z
-    .string()
-    .min(1, { message: 'Start time is required' })
-    .refine((v) => new Date(v) > new Date(), { message: 'Start time must be in the future' }),
   ends_at: z.string(),
   capacity: z.string(),
   tags: z
@@ -31,40 +41,57 @@ const eventSchema = z.object({
     .max(5, { message: 'Select at most 5 tags' }),
   affiliation: z.string(),
   is_public: z.boolean(),
-}).superRefine((data, ctx) => {
-  if (data.ends_at && data.starts_at && new Date(data.ends_at) <= new Date(data.starts_at)) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'End time must be after start time',
-      path: ['ends_at'],
-    });
-  }
-  if (data.capacity && isNaN(parseInt(data.capacity, 10))) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Capacity must be a whole number',
-      path: ['capacity'],
-    });
-  }
-  if (data.capacity && parseInt(data.capacity, 10) < 1) {
-    ctx.addIssue({
-      code: 'custom',
-      message: 'Capacity must be at least 1',
-      path: ['capacity'],
-    });
-  }
-});
+};
+
+const eventSchema = z
+  .object({
+    ...sharedFields,
+    starts_at: z
+      .string()
+      .min(1, { message: 'Start time is required' })
+      .refine((v) => new Date(v) > new Date(), { message: 'Start time must be in the future' }),
+  })
+  .superRefine(applyCrossFieldValidation);
+
+const editEventSchema = z
+  .object({
+    ...sharedFields,
+    starts_at: z.string().min(1, { message: 'Start time is required' }),
+  })
+  .superRefine(applyCrossFieldValidation);
+
+function toDatetimeLocal(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function eventToFormData(event: Event): EventFormData {
+  return {
+    address: event.address,
+    title: event.title,
+    description: event.description ?? '',
+    starts_at: toDatetimeLocal(event.starts_at),
+    ends_at: event.ends_at ? toDatetimeLocal(event.ends_at) : '',
+    capacity: event.capacity !== null ? String(event.capacity) : '',
+    tags: event.tags,
+    affiliation: event.affiliation ?? '',
+    is_public: event.is_public,
+  };
+}
 
 interface Props {
   // flyTo is passed as a callback instead of mapRef so the modal doesn't need
   // to know about the react-map-gl MapRef type or the main map's internal state.
   onFlyTo: (lng: number, lat: number) => void;
   initialValues?: EventFormData | null;
+  initialEvent?: Event;
   submitError?: string | null;
   addOptimisticEvent: (event: Event) => void;
   replaceOptimisticEvent: (tempId: string, event: Event) => void;
   removeOptimisticEvent: (id: string) => void;
   onSubmitFailure: (formData: EventFormData, location: [number, number]) => void;
+  onEditFailure?: (formData: EventFormData, location: [number, number], originalEvent: Event) => void;
 }
 
 const EMPTY_FORM: EventFormData = {
@@ -82,18 +109,22 @@ const EMPTY_FORM: EventFormData = {
 export function CreateEventModal({
   onFlyTo,
   initialValues,
+  initialEvent,
   submitError,
   addOptimisticEvent,
   replaceOptimisticEvent,
   removeOptimisticEvent,
   onSubmitFailure,
+  onEditFailure,
 }: Props) {
   const pendingLocation = useMapStore((s) => s.pendingLocation);
   const setPendingLocation = useMapStore((s) => s.setPendingLocation);
   const exitPlacementMode = useMapStore((s) => s.exitPlacementMode);
   const user = useAuthStore((s) => s.user);
 
-  const init = initialValues ?? EMPTY_FORM;
+  const isEditMode = !!initialEvent;
+  const init = initialValues ?? (initialEvent ? eventToFormData(initialEvent) : EMPTY_FORM);
+
   const [address, setAddress] = useState(init.address);
   const [title, setTitle] = useState(init.title);
   const [description, setDescription] = useState(init.description);
@@ -199,7 +230,8 @@ export function CreateEventModal({
       is_public,
     };
 
-    const result = eventSchema.safeParse(formData);
+    const schema = isEditMode ? editEventSchema : eventSchema;
+    const result = schema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
       for (const issue of result.error.issues) {
@@ -212,6 +244,62 @@ export function CreateEventModal({
 
     const location = pendingLocation;
     if (!location || !user) return;
+
+    if (isEditMode && initialEvent) {
+      const updatedEvent: Event = {
+        ...initialEvent,
+        title,
+        description: description || null,
+        location: { lng: location[0], lat: location[1] },
+        address,
+        starts_at: new Date(starts_at).toISOString(),
+        ends_at: ends_at ? new Date(ends_at).toISOString() : null,
+        capacity: capacity ? parseInt(capacity, 10) : null,
+        tags,
+        affiliation: affiliation || null,
+        is_public,
+      };
+
+      replaceOptimisticEvent(initialEvent.id, updatedEvent);
+      exitPlacementMode();
+
+      void (async () => {
+        try {
+          const { data, error: updateError } = await supabase
+            .from('events')
+            .update({
+              title,
+              description: description || null,
+              location: `SRID=4326;POINT(${location[0]} ${location[1]})`,
+              address,
+              starts_at: new Date(starts_at).toISOString(),
+              ends_at: ends_at ? new Date(ends_at).toISOString() : null,
+              capacity: capacity ? parseInt(capacity, 10) : null,
+              tags,
+              affiliation: affiliation || null,
+              is_public,
+            })
+            .eq('id', initialEvent.id)
+            .select()
+            .single();
+
+          if (updateError || !data) {
+            replaceOptimisticEvent(initialEvent.id, initialEvent);
+            onEditFailure?.(formData, location, initialEvent);
+          } else {
+            const row = data as unknown as Record<string, unknown>;
+            replaceOptimisticEvent(initialEvent.id, {
+              ...updatedEvent,
+              created_at: row.created_at as string,
+            });
+          }
+        } catch {
+          replaceOptimisticEvent(initialEvent.id, initialEvent);
+          onEditFailure?.(formData, location, initialEvent);
+        }
+      })();
+      return;
+    }
 
     const tempId = crypto.randomUUID();
 
@@ -288,7 +376,7 @@ export function CreateEventModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label="Create event"
+      aria-label={isEditMode ? 'Edit event' : 'Create event'}
       onClick={(e) => {
         if (e.target === e.currentTarget) exitPlacementMode();
       }}
@@ -299,7 +387,9 @@ export function CreateEventModal({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800 flex-shrink-0">
-          <h2 className="text-white text-lg font-semibold">Create Event</h2>
+          <h2 className="text-white text-lg font-semibold">
+            {isEditMode ? 'Edit Event' : 'Create Event'}
+          </h2>
           <button
             type="button"
             onClick={exitPlacementMode}
@@ -550,7 +640,9 @@ export function CreateEventModal({
                 </Map>
               </div>
               <p className="absolute bottom-3 left-3 right-3 text-xs text-gray-400 bg-gray-900/80 rounded px-2 py-1 text-center pointer-events-none">
-                Tap the map behind this panel to reposition your pin
+                {isEditMode
+                  ? 'Tap the map to reposition the event pin'
+                  : 'Tap the map behind this panel to reposition your pin'}
               </p>
             </div>
           </div>
@@ -570,7 +662,7 @@ export function CreateEventModal({
             form="create-event-form"
             className="px-5 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors shadow-lg"
           >
-            Post Event
+            {isEditMode ? 'Save Changes' : 'Post Event'}
           </button>
         </div>
       </div>

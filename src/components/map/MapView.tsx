@@ -16,7 +16,8 @@ import { FilterPill } from '../ui/FilterPill';
 import { FilterTray } from '../ui/FilterTray';
 import { CreateEventModal } from '../events/CreateEventModal';
 import { EventDrawer } from '../events/EventDrawer';
-import type { EventFormData } from '../../types';
+import { ProfilePanel } from '../profile/ProfilePanel';
+import type { Event, EventFormData } from '../../types';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
 
@@ -31,12 +32,15 @@ export function MapView() {
   const exitPlacementMode = useMapStore((s) => s.exitPlacementMode);
   const setPendingLocation = useMapStore((s) => s.setPendingLocation);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
+  const editingEvent = useMapStore((s) => s.editingEvent);
+  const setEditingEvent = useMapStore((s) => s.setEditingEvent);
   const user = useAuthStore((s) => s.user);
   const displayName = useAuthStore((s) => s.displayName);
-  const signOut = useAuthStore((s) => s.signOut);
+  const avatarUrl = useAuthStore((s) => s.avatarUrl);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [trayOpen, setTrayOpen] = useState(false);
+  const [profilePanelOpen, setProfilePanelOpen] = useState(false);
 
   // useRef instead of useState: Zustand's useSyncExternalStore flushes a
   // re-render synchronously when setPendingLocation fires, before React can
@@ -120,6 +124,27 @@ export function MapView() {
     [setPendingLocation, enterPlacementMode],
   );
 
+  const handleEditFailure = useCallback(
+    (formData: EventFormData, location: [number, number], originalEvent: Event) => {
+      restoredSubmission.current = {
+        formData,
+        location,
+        error: 'Failed to save changes. Your edits are preserved — please try again.',
+      };
+      setEditingEvent(originalEvent);
+      setPendingLocation(location);
+      enterPlacementMode();
+    },
+    [setEditingEvent, setPendingLocation, enterPlacementMode],
+  );
+
+  const profileLabel = (() => {
+    const name = displayName ?? user?.email ?? '';
+    return name.length > 16 ? `${name.slice(0, 16)}…` : name;
+  })();
+
+  const initial = (displayName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase();
+
   if (loading) return null;
 
   return (
@@ -148,12 +173,26 @@ export function MapView() {
         <div className="absolute top-36 right-2 z-10 flex flex-col items-end gap-1">
           {user ? (
             <>
-              <span className="text-white text-xs bg-black/50 rounded px-2 py-1 max-w-[160px] truncate">
-                {(() => {
-                  const label = displayName ?? user.email ?? '';
-                  return label.length > 20 ? `${label.slice(0, 20)}…` : label;
-                })()}
-              </span>
+              {/* Profile chip */}
+              <button
+                onClick={() => setProfilePanelOpen(true)}
+                className="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-full pl-1 pr-3 py-1 transition-colors"
+                aria-label="Open profile"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt=""
+                    className="w-8 h-8 rounded-full object-cover ring-2 ring-white/20 flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold flex-shrink-0 select-none">
+                    {initial}
+                  </div>
+                )}
+                <span className="text-white text-xs max-w-[120px] truncate">{profileLabel}</span>
+              </button>
+
               <button
                 onClick={handleHostButton}
                 className={`text-white text-sm rounded-lg px-3 py-1.5 font-medium transition-colors shadow-lg ${
@@ -163,12 +202,6 @@ export function MapView() {
                 }`}
               >
                 {placementMode ? 'Cancel' : 'Host Event'}
-              </button>
-              <button
-                onClick={() => void signOut()}
-                className="text-white text-xs bg-black/50 hover:bg-black/70 rounded px-2 py-1 transition-colors"
-              >
-                Sign out
               </button>
             </>
           ) : (
@@ -229,17 +262,26 @@ export function MapView() {
       {/* Event detail drawer — always in DOM, slides up when selectedEventId is set */}
       <EventDrawer />
 
+      {/* Profile panel — slides in from left */}
+      <ProfilePanel
+        isOpen={profilePanelOpen}
+        onClose={() => setProfilePanelOpen(false)}
+        removeEventFromCache={removeOptimisticEvent}
+      />
+
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
 
       {pendingLocation && (
         <CreateEventModal
           onFlyTo={flyTo}
           initialValues={restoredSubmission.current?.formData}
+          initialEvent={editingEvent ?? undefined}
           submitError={restoredSubmission.current?.error}
           addOptimisticEvent={addOptimisticEvent}
           replaceOptimisticEvent={replaceOptimisticEvent}
           removeOptimisticEvent={removeOptimisticEvent}
           onSubmitFailure={handleSubmitFailure}
+          onEditFailure={handleEditFailure}
         />
       )}
     </>

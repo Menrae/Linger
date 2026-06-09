@@ -5,9 +5,11 @@ import { supabase } from '../lib/supabase';
 interface AuthStore {
   user: User | null;
   displayName: string | null;
+  avatarUrl: string | null;
   loading: boolean;
   setUser: (user: User | null) => void;
   setDisplayName: (name: string | null) => void;
+  setAvatarUrl: (url: string | null) => void;
   setLoading: (loading: boolean) => void;
   signOut: () => Promise<void>;
 }
@@ -15,12 +17,14 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   displayName: null,
+  avatarUrl: null,
   loading: true,
   setUser: (user) => set({ user }),
   setDisplayName: (displayName) => set({ displayName }),
+  setAvatarUrl: (avatarUrl) => set({ avatarUrl }),
   setLoading: (loading) => set({ loading }),
   signOut: async () => {
     await supabase.auth.signOut();
-    set({ user: null, displayName: null });
+    set({ user: null, displayName: null, avatarUrl: null });
   },
 }));

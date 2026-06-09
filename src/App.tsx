@@ -4,19 +4,23 @@ import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 import { useFilterSync } from './hooks/useFilterSync';
 
-async function fetchDisplayName(userId: string): Promise<string | null> {
+type ProfileRow = { display_name: string | null; avatar_url: string | null };
+
+async function fetchProfile(userId: string): Promise<ProfileRow> {
   const { data } = await supabase
     .from('profiles')
-    .select('display_name')
+    .select('display_name, avatar_url')
     .eq('id', userId)
     .maybeSingle();
-  return (data as { display_name: string | null } | null)?.display_name ?? null;
+  const row = data as ProfileRow | null;
+  return { display_name: row?.display_name ?? null, avatar_url: row?.avatar_url ?? null };
 }
 
 function App() {
   useFilterSync(); // keeps URL query params in sync with filterStore for the app lifetime
   const setUser = useAuthStore((s) => s.setUser);
   const setDisplayName = useAuthStore((s) => s.setDisplayName);
+  const setAvatarUrl = useAuthStore((s) => s.setAvatarUrl);
   const setLoading = useAuthStore((s) => s.setLoading);
   const loading = useAuthStore((s) => s.loading);
 
@@ -24,7 +28,9 @@ function App() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        setDisplayName(await fetchDisplayName(session.user.id));
+        const profile = await fetchProfile(session.user.id);
+        setDisplayName(profile.display_name);
+        setAvatarUrl(profile.avatar_url);
       }
       setLoading(false);
     });
@@ -34,14 +40,18 @@ function App() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        void fetchDisplayName(session.user.id).then(setDisplayName);
+        void fetchProfile(session.user.id).then((profile) => {
+          setDisplayName(profile.display_name);
+          setAvatarUrl(profile.avatar_url);
+        });
       } else {
         setDisplayName(null);
+        setAvatarUrl(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [setUser, setDisplayName, setLoading]);
+  }, [setUser, setDisplayName, setAvatarUrl, setLoading]);
 
   if (loading) {
     return (

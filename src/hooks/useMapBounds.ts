@@ -1,10 +1,16 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { MapRef } from 'react-map-gl/mapbox';
 import type { MapBounds } from '../types';
 
 export function useMapBounds(mapRef: React.RefObject<MapRef | null>) {
   const [bounds, setBounds] = useState<MapBounds | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const onMoveEnd = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);

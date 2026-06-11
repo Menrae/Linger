@@ -377,12 +377,15 @@ export function ProfilePanel({ isOpen, onClose, removeEventFromCache }: Props) {
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header: X button */}
-        <div className="flex items-center justify-end px-4 pt-4 pb-2 flex-shrink-0">
+        {/* Header: X button — padded for safe area */}
+        <div
+          className="flex items-center justify-end px-4 pb-2 flex-shrink-0"
+          style={{ paddingTop: 'calc(1rem + env(safe-area-inset-top))' }}
+        >
           <button
             onClick={onClose}
             aria-label="Close profile"
-            className="text-gray-400 hover:text-white transition-colors p-1 rounded"
+            className="text-gray-400 hover:text-white transition-colors duration-150 p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -531,7 +534,7 @@ export function ProfilePanel({ isOpen, onClose, removeEventFromCache }: Props) {
 
           {/* Hosted events */}
           <div className="px-4 pb-4">
-            <h3 className="text-white text-sm font-semibold mb-3 px-2">Your Events</h3>
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3 px-2">Your Events</h3>
 
             {/* Tab toggle */}
             <div className="flex bg-gray-800 rounded-lg p-1 mb-3">
@@ -551,18 +554,44 @@ export function ProfilePanel({ isOpen, onClose, removeEventFromCache }: Props) {
             </div>
 
             {hostedLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-5 h-5 border-2 border-gray-600 border-t-gray-300 rounded-full animate-spin" />
+              <div className="space-y-2 animate-pulse">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-gray-800 rounded-xl p-3 space-y-2">
+                    <div className="h-4 bg-gray-700 rounded w-3/4" />
+                    <div className="h-3 bg-gray-700 rounded w-1/2" />
+                  </div>
+                ))}
               </div>
             ) : hostedEvents.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-gray-400 text-sm">
-                  {hostedTab === 'upcoming' ? 'No upcoming events' : 'No past events yet'}
-                </p>
-                {hostedTab === 'upcoming' && (
-                  <p className="text-gray-600 text-xs mt-1">Host one by tapping the map</p>
-                )}
-              </div>
+              hostedTab === 'upcoming' ? (
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <svg className="w-12 h-12 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-white/80">Nothing planned yet</p>
+                    <p className="text-xs text-white/40 mt-1">Tap the map to host your first event</p>
+                  </div>
+                  <button
+                    onClick={() => { onClose(); enterPlacementMode(); }}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px]"
+                  >
+                    Host an event
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-3 py-8 text-center">
+                  <svg className="w-12 h-12 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-semibold text-white/80">No past events</p>
+                    <p className="text-xs text-white/40 mt-1">Your hosted events will appear here</p>
+                  </div>
+                </div>
+              )
             ) : (
               <div className="space-y-2">
                 {hostedEvents.map((event) => (
@@ -637,16 +666,33 @@ export function ProfilePanel({ isOpen, onClose, removeEventFromCache }: Props) {
 
           {/* RSVPd events */}
           <div className="px-4 pb-4 border-t border-gray-800 pt-4">
-            <h3 className="text-white text-sm font-semibold mb-3 px-2">Going</h3>
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3 px-2">Going</h3>
 
             {rsvpdLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-5 h-5 border-2 border-gray-600 border-t-gray-300 rounded-full animate-spin" />
+              <div className="space-y-2 animate-pulse">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-gray-800 rounded-xl p-3 space-y-2">
+                    <div className="h-4 bg-gray-700 rounded w-3/4" />
+                    <div className="h-3 bg-gray-700 rounded w-1/2" />
+                  </div>
+                ))}
               </div>
             ) : rsvpdEvents.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-gray-400 text-sm">Nothing yet</p>
-                <p className="text-gray-600 text-xs mt-1">Tap a pin to explore events near you</p>
+              <div className="flex flex-col items-center gap-3 py-8 text-center">
+                <svg className="w-12 h-12 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.25}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                </svg>
+                <div>
+                  <p className="text-sm font-semibold text-white/80">Nothing on your calendar</p>
+                  <p className="text-xs text-white/40 mt-1">Tap a pin to explore events near you</p>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-5 py-2.5 rounded-xl transition-colors duration-150 min-h-[44px]"
+                >
+                  Explore the map
+                </button>
               </div>
             ) : (
               <div className="space-y-2">
@@ -689,7 +735,7 @@ export function ProfilePanel({ isOpen, onClose, removeEventFromCache }: Props) {
           <div className="px-6 py-4 border-t border-gray-800">
             <button
               onClick={() => void handleSignOut()}
-              className="text-sm text-red-500/70 hover:text-red-400 transition-colors"
+              className="text-sm text-red-400 hover:text-red-300 transition-colors duration-150 min-h-[44px] flex items-center"
             >
               Sign out
             </button>

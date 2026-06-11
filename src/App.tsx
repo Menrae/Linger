@@ -3,6 +3,7 @@ import { MapView } from './components/map/MapView';
 import { useAuthStore } from './store/authStore';
 import { supabase } from './lib/supabase';
 import { useFilterSync } from './hooks/useFilterSync';
+import { ToastContainer } from './components/ui/Toast';
 
 type ProfileRow = { display_name: string | null; avatar_url: string | null };
 
@@ -61,7 +62,12 @@ function App() {
     );
   }
 
-  return <MapView />;
+  return (
+    <>
+      <MapView />
+      <ToastContainer />
+    </>
+  );
 }
 
 export default App;

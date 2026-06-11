@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Marker } from 'react-map-gl/mapbox';
 import { useMapStore } from '../../store/mapStore';
 import { TAG_COLORS } from '../../types';
@@ -20,7 +20,7 @@ interface EventPinProps {
   isDimmed?: boolean;
 }
 
-export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
+export const EventPin = memo(function EventPin({ event, isNew, isDimmed }: EventPinProps) {
   const [hovered, setHovered] = useState(false);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
   const selectedEventId = useMapStore((s) => s.selectedEventId);
@@ -30,7 +30,7 @@ export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
   if (isDimmed) {
     return (
       <Marker longitude={event.location.lng} latitude={event.location.lat} anchor="center">
-        <div className="opacity-25">
+        <div className="opacity-25 w-[44px] h-[44px] flex items-center justify-center">
           <div
             style={{ backgroundColor: color }}
             className="w-4 h-4 rounded-full border-2 border-white shadow-md"
@@ -51,20 +51,21 @@ export function EventPin({ event, isNew, isDimmed }: EventPinProps) {
       }}
     >
       <div
-        className={`relative cursor-pointer transition-transform duration-150 ${isSelected ? 'scale-[1.2]' : ''}`}
+        className="relative flex items-center justify-center cursor-pointer"
+        style={{ width: 44, height: 44 }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
         <div
           style={{ backgroundColor: color }}
-          className={`w-4 h-4 rounded-full border-2 border-white shadow-md${isNew ? ' animate-pin-enter' : ''}`}
+          className={`w-4 h-4 rounded-full border-2 border-white shadow-md transition-transform duration-150${isNew ? ' animate-pin-enter' : ''}${isSelected ? ' scale-[1.4]' : ''}`}
         />
         {hovered && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg pointer-events-none">
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap shadow-lg pointer-events-none">
             {event.title}
           </div>
         )}
       </div>
     </Marker>
   );
-}
+});

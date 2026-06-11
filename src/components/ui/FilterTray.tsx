@@ -77,7 +77,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
     <>
       {/* Backdrop — always in DOM, fades in/out */}
       <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-[250ms] ${
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-[250ms] ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
@@ -103,7 +103,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
 
           {/* TIME */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3">
               Time
             </h3>
             <div className="flex gap-2">
@@ -149,7 +149,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
 
           {/* TAGS */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3">
               Tags
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -161,7 +161,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
                     key={tag}
                     type="button"
                     onClick={() => toggleTag(tag)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border transition-colors duration-150 min-h-[44px] ${
                       selected ? '' : 'border-gray-700 text-gray-400 hover:border-gray-600 hover:text-gray-200'
                     }`}
                     style={
@@ -189,7 +189,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
 
           {/* CAPACITY */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3">
               Capacity
             </h3>
             <input
@@ -200,14 +200,14 @@ export function FilterTray({ isOpen, onClose }: Props) {
               placeholder="Any"
               className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500 placeholder-gray-500"
             />
-            <p className="mt-1.5 text-xs text-gray-500">
+            <p className="mt-1.5 text-xs text-white/50">
               Minimum spots — events with unlimited capacity always included
             </p>
           </section>
 
           {/* AFFILIATION */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-sm font-medium text-white/60 uppercase tracking-wider mb-3">
               Affiliation
             </h3>
             <input
@@ -239,7 +239,7 @@ export function FilterTray({ isOpen, onClose }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors duration-150 min-h-[44px]"
           >
             Done
           </button>

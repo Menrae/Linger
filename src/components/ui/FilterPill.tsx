@@ -17,7 +17,8 @@ export function FilterPill({ onClick }: Props) {
     <button
       onClick={onClick}
       aria-label={`Filters${activeCount > 0 ? `, ${activeCount} active` : ''}`}
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm font-medium pl-3.5 pr-4 py-2.5 rounded-full shadow-lg shadow-black/40 hover:bg-gray-800 transition-colors"
+      className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 bg-gray-900/95 backdrop-blur-sm text-white text-sm font-medium pl-3.5 pr-4 py-2.5 rounded-full shadow-lg shadow-black/40 hover:bg-gray-800 transition-colors min-h-[44px]"
+      style={{ bottom: 'calc(1.5rem + env(safe-area-inset-bottom))' }}
     >
       {/* Adjustments / sliders icon */}
       <svg

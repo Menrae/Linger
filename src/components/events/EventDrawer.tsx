@@ -74,7 +74,7 @@ export function EventDrawer() {
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-[250ms] ${
+        className={`fixed inset-0 z-40 bg-black/50 transition-opacity duration-[250ms] ${
           isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setSelectedEvent(null)}
@@ -123,14 +123,14 @@ export function EventDrawer() {
           {state.status === 'ready' && (
             <div className="px-4 pb-6 pt-1 space-y-3">
               {/* Title */}
-              <h2 className="text-white text-xl font-semibold leading-tight">
+              <h2 className="text-white text-lg font-semibold leading-tight">
                 {state.detail.title}
               </h2>
 
               {/* Host */}
-              <p className="text-gray-400 text-sm">
+              <p className="text-sm text-white/50">
                 Hosted by{' '}
-                <span className="text-gray-200">
+                <span className="text-white/80">
                   {state.detail.host?.display_name ?? 'Anonymous'}
                 </span>
               </p>
@@ -230,14 +230,14 @@ export function EventDrawer() {
                   state.detail.is_attending ? (
                     <button
                       onClick={() => void cancelRsvp()}
-                      className="flex-1 bg-gray-700 hover:bg-gray-600 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                      className="flex-1 bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150"
                     >
                       Cancel RSVP
                     </button>
                   ) : (
                     <button
                       onClick={() => void rsvp()}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150"
                     >
                       RSVP
                     </button>
@@ -248,7 +248,7 @@ export function EventDrawer() {
 
                 <button
                   onClick={() => void handleShare()}
-                  className="bg-gray-800 hover:bg-gray-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors min-w-[80px]"
+                  className="bg-white/10 hover:bg-white/20 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors duration-150 min-w-[80px]"
                 >
                   {copied ? 'Copied!' : 'Share'}
                 </button>

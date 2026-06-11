@@ -51,8 +51,11 @@ export function useEvents(bounds: MapBounds | null) {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const boundsRef = useRef<MapBounds | null>(null);
   const [recentEventIds, setRecentEventIds] = useState<Set<string>>(new Set());
+
+  const retry = () => setRetryCount((c) => c + 1);
 
   const mergeAndCommit = useCallback((incoming: Event[]) => {
     const prevCache = cache.current;
@@ -78,6 +81,7 @@ export function useEvents(bounds: MapBounds | null) {
     boundsRef.current = bounds;
   }, [bounds]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!bounds) return;
 
@@ -114,8 +118,8 @@ export function useEvents(bounds: MapBounds | null) {
     return () => {
       cancelled = true;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bounds]); // mergeAndCommit is stable (useCallback with [], reads boundsRef)
+  // mergeAndCommit is stable (useCallback with [], reads boundsRef)
+  }, [bounds, retryCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const channel = supabase
@@ -168,5 +172,5 @@ export function useEvents(bounds: MapBounds | null) {
     setEvents([...cache.current.values()]);
   }, []);
 
-  return { events, loading, error, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent };
+  return { events, loading, error, retry, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent };
 }

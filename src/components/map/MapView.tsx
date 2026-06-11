@@ -9,6 +9,7 @@ import { useCluster } from '../../hooks/useCluster';
 import { useFilteredEvents } from '../../hooks/useFilteredEvents';
 import { useMapStore } from '../../store/mapStore';
 import { useAuthStore } from '../../store/authStore';
+import { useFilterStore } from '../../store/filterStore';
 import { EventPin } from './EventPin';
 import { EventCluster } from './EventCluster';
 import { AuthModal } from '../ui/AuthModal';
@@ -17,6 +18,7 @@ import { FilterTray } from '../ui/FilterTray';
 import { CreateEventModal } from '../events/CreateEventModal';
 import { EventDrawer } from '../events/EventDrawer';
 import { ProfilePanel } from '../profile/ProfilePanel';
+import { showToast } from '../ui/Toast';
 import type { Event, EventFormData } from '../../types';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string;
@@ -37,6 +39,7 @@ export function MapView() {
   const user = useAuthStore((s) => s.user);
   const displayName = useAuthStore((s) => s.displayName);
   const avatarUrl = useAuthStore((s) => s.avatarUrl);
+  const clearAll = useFilterStore((s) => s.clearAll);
 
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [trayOpen, setTrayOpen] = useState(false);
@@ -53,7 +56,7 @@ export function MapView() {
   } | null>(null);
 
   const { bounds, onMoveEnd: boundsOnMoveEnd } = useMapBounds(mapRef);
-  const { events, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent } =
+  const { events, loading: eventsLoading, error: eventsError, retry, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent } =
     useEvents(bounds);
 
   // Client-side filtering — no extra network calls on filter change.
@@ -61,6 +64,20 @@ export function MapView() {
   // dimmedEvents → rendered as individual pins at 25% opacity, never clustered.
   const { filteredEvents, dimmedEvents } = useFilteredEvents(events);
   const { clusters } = useCluster(filteredEvents, bounds, viewport.zoom);
+
+  // True empty state: fetched, no events in viewport at all
+  const showEmptyState =
+    events.length === 0 && !eventsLoading && bounds !== null && !placementMode;
+
+  // Filter empty state: events exist but all filtered out
+  const showFilterEmpty = filteredEvents.length === 0 && events.length > 0;
+
+  // Toast on fetch error
+  useEffect(() => {
+    if (eventsError) {
+      showToast("Couldn't load events", { label: 'Retry', onClick: retry });
+    }
+  }, [eventsError, retry]);
 
   // Sync crosshair cursor with placement mode
   useEffect(() => {
@@ -145,7 +162,13 @@ export function MapView() {
 
   const initial = (displayName?.[0] ?? user?.email?.[0] ?? '?').toUpperCase();
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full h-screen bg-gray-900">
+        <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -164,19 +187,22 @@ export function MapView() {
 
         {/* Placement mode instruction banner */}
         {placementMode && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-gray-900/90 text-white text-sm px-4 py-2 rounded-lg shadow-lg pointer-events-none whitespace-nowrap">
-            Click anywhere on the map to place your event — or search by address below
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 bg-gray-900/90 text-white text-sm px-4 py-2 rounded-lg shadow-lg pointer-events-none text-center max-w-[calc(100vw-2rem)]">
+            Tap the map to place your event
           </div>
         )}
 
-        {/* Auth / Host controls */}
-        <div className="absolute top-36 right-2 z-10 flex flex-col items-end gap-1">
+        {/* Auth / Host controls — offset from top to account for safe area */}
+        <div
+          className="absolute right-2 z-10 flex flex-col items-end gap-1"
+          style={{ top: 'calc(9rem + env(safe-area-inset-top))' }}
+        >
           {user ? (
             <>
               {/* Profile chip */}
               <button
                 onClick={() => setProfilePanelOpen(true)}
-                className="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-full pl-1 pr-3 py-1 transition-colors"
+                className="flex items-center gap-2 bg-black/50 hover:bg-black/70 rounded-full pl-1 pr-3 py-1 transition-colors min-h-[44px]"
                 aria-label="Open profile"
               >
                 {avatarUrl ? (
@@ -195,7 +221,7 @@ export function MapView() {
 
               <button
                 onClick={handleHostButton}
-                className={`text-white text-sm rounded-lg px-3 py-1.5 font-medium transition-colors shadow-lg ${
+                className={`text-white text-sm rounded-lg px-3 py-1.5 font-medium transition-colors duration-150 shadow-lg min-h-[44px] ${
                   placementMode
                     ? 'bg-gray-600 hover:bg-gray-500'
                     : 'bg-indigo-600 hover:bg-indigo-500'
@@ -207,7 +233,7 @@ export function MapView() {
           ) : (
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="text-white text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg px-3 py-1.5 font-medium transition-colors shadow-lg"
+              className="text-white text-sm bg-indigo-600 hover:bg-indigo-500 rounded-lg px-3 py-1.5 font-medium transition-colors duration-150 shadow-lg min-h-[44px]"
             >
               Sign in to host
             </button>
@@ -220,6 +246,18 @@ export function MapView() {
             <div className="pending-marker">
               <div className="pending-marker-ring" />
               <div className="pending-marker-core" />
+            </div>
+          </Marker>
+        )}
+
+        {/* Sonar ping empty state — shown when viewport has no events */}
+        {showEmptyState && (
+          <Marker longitude={lng} latitude={lat} anchor="center">
+            <div className="sonar-container">
+              <div className="sonar-ring" />
+              <div className="sonar-ring" />
+              <div className="sonar-ring" />
+              <div className="sonar-core" />
             </div>
           </Marker>
         )}
@@ -254,6 +292,45 @@ export function MapView() {
           );
         })}
       </Map>
+
+      {/* "No matches" pill — filters active but nothing passes */}
+      {showFilterEmpty && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-[42] flex items-center gap-1.5 bg-gray-900/95 backdrop-blur-sm text-white/70 text-xs px-3.5 py-2 rounded-full shadow-lg whitespace-nowrap transition-opacity duration-150"
+          style={{ bottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}
+        >
+          No matches ·{' '}
+          <button
+            onClick={clearAll}
+            className="text-indigo-400 hover:text-indigo-300 transition-colors duration-150 font-medium"
+          >
+            Clear filters
+          </button>
+        </div>
+      )}
+
+      {/* Invitation card — true empty state, below FilterPill */}
+      {showEmptyState && (
+        <div
+          className="fixed left-1/2 -translate-x-1/2 z-[42] w-[calc(100%-2rem)] max-w-xs"
+          style={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+        >
+          <div className="bg-gray-900/95 backdrop-blur-sm rounded-2xl px-5 py-4 shadow-2xl shadow-black/50 text-center">
+            <h3 className="text-white text-base font-semibold mb-1">No events nearby yet</h3>
+            <p className="text-white/50 text-sm mb-4">
+              {user
+                ? 'Linger is just getting started here.'
+                : 'Sign in to host the first event'}
+            </p>
+            <button
+              onClick={user ? handleHostButton : () => setAuthModalOpen(true)}
+              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium py-2.5 rounded-xl transition-colors duration-150"
+            >
+              {user ? 'Host the first event →' : 'Sign in →'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter pill — sits above map, below modals (z-40) */}
       <FilterPill onClick={() => setTrayOpen(true)} />

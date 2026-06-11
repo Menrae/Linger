@@ -4,6 +4,60 @@ body {
   margin: 0;
 }
 
+/* ── Sonar empty-state animation ─────────────────────────────────────────── */
+
+@keyframes sonar-ring {
+  0%   { transform: scale(0); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+
+.sonar-container {
+  position: relative;
+  width: 20px;
+  height: 20px;
+}
+
+.sonar-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #6366f1;
+  opacity: 0.7;
+}
+
+.sonar-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid #6366f1;
+  animation: sonar-ring 3.5s ease-out infinite;
+}
+
+.sonar-ring:nth-child(2) { animation-delay: 1s; }
+.sonar-ring:nth-child(3) { animation-delay: 2s; }
+
+/* ── Toast animation ─────────────────────────────────────────────────────── */
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+/* ── Safe area utilities ─────────────────────────────────────────────────── */
+
+.safe-bottom-6 {
+  bottom: calc(1.5rem + env(safe-area-inset-bottom));
+}
+
+.safe-bottom-20 {
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+}
+
 @keyframes pin-enter {
   from { transform: scale(0); opacity: 0; }
   to   { transform: scale(1); opacity: 1; }

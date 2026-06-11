@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Marker } from 'react-map-gl/mapbox';
 import { clusterIndex } from '../../lib/supercluster';
 import type { MapRef } from 'react-map-gl/mapbox';
@@ -16,7 +17,7 @@ function clusterSize(count: number): number {
   return 36;
 }
 
-export function EventCluster({
+export const EventCluster = memo(function EventCluster({
   clusterId,
   longitude,
   latitude,
@@ -42,4 +43,4 @@ export function EventCluster({
       </div>
     </Marker>
   );
-}
+});

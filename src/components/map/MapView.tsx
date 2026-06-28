@@ -1,6 +1,6 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import Map, { NavigationControl, GeolocateControl, Marker } from 'react-map-gl/mapbox';
-import type { MapRef, MapLayerMouseEvent } from 'react-map-gl/mapbox';
+import type { MapRef, MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useUserLocation } from '../../hooks/useUserLocation';
 import { useMapBounds } from '../../hooks/useMapBounds';
@@ -104,7 +104,7 @@ export function MapView() {
   }, [boundsOnMoveEnd]);
 
   const onMapClick = useCallback(
-    (e: MapLayerMouseEvent) => {
+    (e: MapMouseEvent) => {
       if (placementMode) {
         setPendingLocation([e.lngLat.lng, e.lngLat.lat]);
       } else {

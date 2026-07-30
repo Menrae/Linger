@@ -10,12 +10,14 @@ interface Viewport {
 interface MapState {
   viewport: Viewport;
   selectedEventId: string | null;
+  selectedExternalEvent: Event | null;
   placementMode: boolean;
   pendingLocation: [number, number] | null; // [lng, lat]
   editingEvent: Event | null;
 
   setViewport: (viewport: Viewport) => void;
   setSelectedEvent: (id: string | null) => void;
+  setSelectedExternalEvent: (event: Event | null) => void;
   enterPlacementMode: () => void;
   exitPlacementMode: () => void;
   setPendingLocation: (coords: [number, number] | null) => void;
@@ -25,12 +27,14 @@ interface MapState {
 export const useMapStore = create<MapState>((set) => ({
   viewport: { lat: 39.8283, lng: -98.5795, zoom: 4 },
   selectedEventId: null,
+  selectedExternalEvent: null,
   placementMode: false,
   pendingLocation: null,
   editingEvent: null,
 
   setViewport: (viewport) => set({ viewport }),
-  setSelectedEvent: (id) => set({ selectedEventId: id }),
+  setSelectedEvent: (id) => set({ selectedEventId: id, selectedExternalEvent: null }),
+  setSelectedExternalEvent: (event) => set({ selectedEventId: event?.id ?? null, selectedExternalEvent: event }),
   enterPlacementMode: () => set({ placementMode: true }),
   exitPlacementMode: () => set({ placementMode: false, pendingLocation: null, editingEvent: null }),
   setPendingLocation: (coords) => set({ pendingLocation: coords }),

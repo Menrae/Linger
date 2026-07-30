@@ -1,10 +1,11 @@
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, useMemo } from 'react';
 import Map, { NavigationControl, GeolocateControl, Marker } from 'react-map-gl/mapbox';
 import type { MapRef, MapMouseEvent } from 'react-map-gl/mapbox';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useUserLocation } from '../../hooks/useUserLocation';
 import { useMapBounds } from '../../hooks/useMapBounds';
 import { useEvents } from '../../hooks/useEvents';
+import { useEventbriteEvents } from '../../hooks/useEventbriteEvents';
 import { useCluster } from '../../hooks/useCluster';
 import { useFilteredEvents } from '../../hooks/useFilteredEvents';
 import { useMapStore } from '../../store/mapStore';
@@ -58,19 +59,23 @@ export function MapView() {
   const { bounds, onMoveEnd: boundsOnMoveEnd } = useMapBounds(mapRef);
   const { events, loading: eventsLoading, error: eventsError, retry, recentEventIds, addOptimisticEvent, replaceOptimisticEvent, removeOptimisticEvent } =
     useEvents(bounds);
+  const ebEvents = useEventbriteEvents(bounds);
+
+  // Merge local (Supabase) and Eventbrite events before filtering/clustering
+  const allEvents = useMemo(() => [...events, ...ebEvents], [events, ebEvents]);
 
   // Client-side filtering — no extra network calls on filter change.
   // filteredEvents → clustered normally (full opacity).
   // dimmedEvents → rendered as individual pins at 25% opacity, never clustered.
-  const { filteredEvents, dimmedEvents } = useFilteredEvents(events);
+  const { filteredEvents, dimmedEvents } = useFilteredEvents(allEvents);
   const { clusters } = useCluster(filteredEvents, bounds, viewport.zoom);
 
   // True empty state: fetched, no events in viewport at all
   const showEmptyState =
-    events.length === 0 && !eventsLoading && bounds !== null && !placementMode;
+    allEvents.length === 0 && !eventsLoading && bounds !== null && !placementMode;
 
   // Filter empty state: events exist but all filtered out
-  const showFilterEmpty = filteredEvents.length === 0 && events.length > 0;
+  const showFilterEmpty = filteredEvents.length === 0 && allEvents.length > 0;
 
   // Toast on fetch error
   useEffect(() => {

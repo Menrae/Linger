@@ -23,9 +23,11 @@ interface EventPinProps {
 export const EventPin = memo(function EventPin({ event, isNew, isDimmed }: EventPinProps) {
   const [hovered, setHovered] = useState(false);
   const setSelectedEvent = useMapStore((s) => s.setSelectedEvent);
+  const setSelectedExternalEvent = useMapStore((s) => s.setSelectedExternalEvent);
   const selectedEventId = useMapStore((s) => s.selectedEventId);
   const isSelected = selectedEventId === event.id;
   const color = tagColor(event.tags);
+  const isExternal = event.source === 'eventbrite';
 
   if (isDimmed) {
     return (
@@ -47,7 +49,11 @@ export const EventPin = memo(function EventPin({ event, isNew, isDimmed }: Event
       anchor="center"
       onClick={(e) => {
         e.originalEvent.stopPropagation();
-        setSelectedEvent(event.id);
+        if (isExternal) {
+          setSelectedExternalEvent(event);
+        } else {
+          setSelectedEvent(event.id);
+        }
       }}
     >
       <div
@@ -56,6 +62,11 @@ export const EventPin = memo(function EventPin({ event, isNew, isDimmed }: Event
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
+        {isExternal && (
+          <div
+            className={`absolute w-5 h-5 rounded-full border-2 border-orange-400/70 pointer-events-none transition-transform duration-150${isSelected ? ' scale-[1.4]' : ''}`}
+          />
+        )}
         <div
           style={{ backgroundColor: color }}
           className={`w-4 h-4 rounded-full border-2 border-white shadow-md transition-transform duration-150${isNew ? ' animate-pin-enter' : ''}${isSelected ? ' scale-[1.4]' : ''}`}

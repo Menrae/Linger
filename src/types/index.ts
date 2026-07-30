@@ -60,6 +60,8 @@ export interface Event {
   affiliation: string | null;
   is_public: boolean;
   attendee_count: number;
+  source?: 'eventbrite';
+  url?: string;
 }
 
 export interface MapBounds {

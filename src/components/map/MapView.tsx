@@ -324,7 +324,7 @@ export function MapView() {
             <h3 className="text-white text-base font-semibold mb-1">No events nearby yet</h3>
             <p className="text-white/50 text-sm mb-4">
               {user
-                ? 'Linger is just getting started here.'
+                ? 'Linger™ is just getting started here.'
                 : 'Sign in to host the first event'}
             </p>
             <button
@@ -352,6 +352,14 @@ export function MapView() {
       />
 
       {authModalOpen && <AuthModal onClose={() => setAuthModalOpen(false)} />}
+
+      {/* Copyright notice */}
+      <div
+        className="fixed left-2 z-30 text-white/30 text-[10px] pointer-events-none select-none"
+        style={{ bottom: 'calc(0.25rem + env(safe-area-inset-bottom))' }}
+      >
+        © 2026 Linger™
+      </div>
 
       {pendingLocation && (
         <CreateEventModal

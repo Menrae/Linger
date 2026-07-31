@@ -2,7 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import type { Event, EventTag, MapBounds } from '../types';
 
 const TOKEN = import.meta.env.VITE_EVENTBRITE_TOKEN as string | undefined;
-const BASE = 'https://www.eventbriteapi.com/v3';
+// Requests go through /api/eb (Vite proxy in dev, Vercel edge fn in prod)
+// to avoid Eventbrite's CORS restrictions on direct browser calls.
+const BASE = '/api/eb';
 
 const CATEGORY_TAG: Record<string, EventTag> = {
   '103': 'Arts & Culture',  // Music

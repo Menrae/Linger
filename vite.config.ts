@@ -6,10 +6,10 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api/eb': {
-        target: 'https://www.eventbriteapi.com/v3',
+      '/api/eventbrite': {
+        target: 'https://www.eventbriteapi.com',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/eb/, ''),
+        rewrite: () => '/v3/events/search/',
       },
     },
   },

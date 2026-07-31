@@ -2,9 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import type { Event, EventTag, MapBounds } from '../types';
 
 const TOKEN = import.meta.env.VITE_EVENTBRITE_TOKEN as string | undefined;
-// Requests go through /api/eb (Vite proxy in dev, Vercel edge fn in prod)
-// to avoid Eventbrite's CORS restrictions on direct browser calls.
-const BASE = '/api/eb';
 
 const CATEGORY_TAG: Record<string, EventTag> = {
   '103': 'Arts & Culture',  // Music
@@ -93,7 +90,7 @@ export function useEventbriteEvents(bounds: MapBounds | null): Event[] {
         'start_date.range_start': new Date().toISOString().split('.')[0] + 'Z',
       });
 
-      fetch(`${BASE}/events/search/?${params}`, {
+      fetch(`/api/eventbrite?${params}`, {
         headers: { Authorization: `Bearer ${TOKEN}` },
       })
         .then((r) => r.json())
